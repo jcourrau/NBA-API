@@ -1,0 +1,6 @@
+prefect
+pandas
+python_dotenv
+pymongo
+dnspython
+nba_api
