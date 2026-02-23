@@ -37,6 +37,7 @@ def _get_target_date(target_date: Optional[str]) -> date:
     return date(yyyy, mm, dd)
 
 
+
 @task(retries=6, retry_delay_seconds=60)
 def extract_scoreboard(game_date: date) -> Tuple[pd.DataFrame, pd.DataFrame]:
     logger = get_run_logger()
