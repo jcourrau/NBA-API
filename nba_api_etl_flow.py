@@ -37,7 +37,7 @@ def _get_target_date(target_date: Optional[str]) -> date:
     return date(yyyy, mm, dd)
 
 
-@task(retries=2, retry_delay_seconds=30)
+@task(retries=2, retry_delay_seconds=60)
 def extract_scoreboard(game_date: date) -> Tuple[pd.DataFrame, pd.DataFrame]:
     logger = get_run_logger()
     logger.info(f"Extract: scoreboard para {game_date.isoformat()}")
@@ -132,7 +132,7 @@ def transform(game_header: pd.DataFrame, line_score: pd.DataFrame) -> pd.DataFra
     return game_scores_df
 
 
-@task(retries=2, retry_delay_seconds=30)
+@task(retries=2, retry_delay_seconds=60)
 def load_to_mongo(df: pd.DataFrame) -> dict:
     logger = get_run_logger()
     logger.info("Load: iniciando")
