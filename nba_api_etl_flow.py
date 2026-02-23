@@ -37,10 +37,10 @@ def _get_target_date(target_date: Optional[str]) -> date:
     return date(yyyy, mm, dd)
 
 
-@task(retries=2, retry_delay_seconds=60)
+@task(retries=6, retry_delay_seconds=60)
 def extract_scoreboard(game_date: date) -> Tuple[pd.DataFrame, pd.DataFrame]:
     logger = get_run_logger()
-    logger.info(f"Extract: scoreboard para {game_date.isoformat()}")
+    logger.info(f"Extract: scoreboard for {game_date.isoformat()}")
 
     sb = scoreboardv3.ScoreboardV3(
         league_id="00",
@@ -50,20 +50,20 @@ def extract_scoreboard(game_date: date) -> Tuple[pd.DataFrame, pd.DataFrame]:
     game_header = sb.game_header.get_data_frame()
     line_score = sb.line_score.get_data_frame()
 
-    logger.info(f"Extract: game_header filas {len(game_header)}, line_score filas {len(line_score)}")
+    logger.info(f"Extract: game_header {len(game_header)} rows | line_score {len(line_score)} rows")
     return game_header, line_score
 
 
 @task
 def transform(game_header: pd.DataFrame, line_score: pd.DataFrame) -> pd.DataFrame:
     logger = get_run_logger()
-    logger.info("Transform: iniciando")
+    logger.info("Transform: starting...")
 
     gh = game_header.copy()
     ls = line_score.copy()
 
     if gh.empty or ls.empty:
-        logger.info("Transform: no hay datos, devuelve dataframe vacio")
+        logger.info("Transform: there are no games for the given date.")
         return pd.DataFrame()
 
     gh_idx = gh.set_index("gameId")
@@ -128,17 +128,17 @@ def transform(game_header: pd.DataFrame, line_score: pd.DataFrame) -> pd.DataFra
 
     game_scores_df["etl_date"] = date.today().isoformat()
 
-    logger.info(f"Transform: salida filas {len(game_scores_df)}")
+    logger.info(f"Transform: {len(game_scores_df)} rows returned.")
     return game_scores_df
 
 
 @task(retries=2, retry_delay_seconds=60)
 def load_to_mongo(df: pd.DataFrame) -> dict:
     logger = get_run_logger()
-    logger.info("Load: iniciando")
+    logger.info("Load: starting...")
 
     if df is None or df.empty:
-        logger.info("Load: no hay filas para cargar")
+        logger.info("Load: No data to load.")
         return {"ok": True, "inserted": 0, "modified": 0, "processed": 0}
 
     load_dotenv()
@@ -148,7 +148,7 @@ def load_to_mongo(df: pd.DataFrame) -> dict:
     mongo_collection = os.getenv("MONGO_COLLECTION", "scoreboard_games")
 
     if not mongo_uri:
-        raise ValueError("Falta MONGO_URI en el archivo .env")
+        raise ValueError("There is no MONGO_URI in the .env file")
 
     client = MongoClient(mongo_uri)
     col = client[mongo_db][mongo_collection]
